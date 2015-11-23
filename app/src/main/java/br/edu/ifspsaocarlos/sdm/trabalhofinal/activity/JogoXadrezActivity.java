@@ -1,26 +1,23 @@
 package br.edu.ifspsaocarlos.sdm.trabalhofinal.activity;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.AttributeSet;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Timer;
 import java.util.TimerTask;
 
 import br.edu.ifspsaocarlos.sdm.trabalhofinal.R;
+import br.edu.ifspsaocarlos.sdm.trabalhofinal.components.OnSwipeTouchListener;
+import br.edu.ifspsaocarlos.sdm.trabalhofinal.model.GameControl;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -29,117 +26,114 @@ import br.edu.ifspsaocarlos.sdm.trabalhofinal.R;
 public class JogoXadrezActivity extends AppCompatActivity {
 
 
-    private final static String TAG = "JogoXadrezActivity";
-    private static final boolean AUTO_HIDE = true;
-    private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
-    private static final int UI_ANIMATION_DELAY = 300;
-    private static final int PLAYER_QTD = 2;
-
-    private View mContentView;
-    private View mControlsView;
-    private View mControlsButtom;
+    private final   static String TAG = "JogoXadrezActivity";
+    private static  final boolean AUTO_HIDE = true;
+    private static  final int AUTO_HIDE_DELAY_MILLIS = 3000;
+    private static  final int UI_ANIMATION_DELAY = 300;
+    private View    mContentView;
+    private View    mControlsView;
     private boolean mVisible;
-    private List<Timer> timers = new ArrayList<Timer>();
-    private Timer timerActive;
-    private Iterator<Timer> timerIterator;
-    private TimerTask task;
+
+
+    private View    mControlsButton;
+    private TextView txtTempoJogo;
+    private TextView txtTempoJogadorEspera;
+    private TextView txtTempoJogadorAtual;
+    private TextView txtNomeJogadorEspera;
+    private TextView txtNomeJogadorAtual;
+
+    private GameControl gamePlay;
+
     private final Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Log.d(TAG, "Seleciona Layout do jogo  e Inicia variáveis");
         setContentView(R.layout.activity_crono_xadrez);
 
         mVisible = true;
         mControlsView = findViewById(R.id.frame_controls);
         mContentView = findViewById(R.id.frame_preview);
-        mControlsButtom = findViewById(R.id.floating_shape);
+        mControlsButton = findViewById(R.id.floating_shape);
+        txtTempoJogo = (TextView) findViewById(R.id.txtTempoJogo);
+        txtTempoJogadorAtual = (TextView) findViewById(R.id.tempoJogadorAtual);
+        txtTempoJogadorEspera = (TextView) findViewById(R.id.tempoJogadorEspera);
+        txtNomeJogadorAtual = (TextView) findViewById(R.id.nomeJogadorAtual);
+        txtNomeJogadorEspera = (TextView) findViewById(R.id.nomeJogadorEspera);
 
-        mContentView.setOnClickListener(new View.OnClickListener() {
+        Log.d(TAG, "Cria um listener para responder ao fechamento da tela de configuração");
+        mControlsView.setOnTouchListener(new OnSwipeTouchListener(this) {
+
             @Override
-            public void onClick(View view) {
+            public void onSwipeTop() {
+                Log.d(TAG, "Swipe Up on view.");
                 toggle();
             }
+
         });
 
-        //findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
-        View shape = mContentView.findViewById(R.id.floating_shape);
+        Log.d(TAG, "Cria um listener para responder a abertura da tela de configuração");
+        mContentView.setOnTouchListener(new OnSwipeTouchListener(this) {
+            @Override
+            public void onSwipeBottom() {
+                Log.d(TAG, "Swipe Bottom on view.");
+                toggle();
+            }
 
-        /**
-         * Sets a {@Link View.OnTouchListener} that responds to a touch event on shape2.
-         */
+        });
 
-        shape.setOnTouchListener(new View.OnTouchListener() {
+        Log.d(TAG, "Cria um listener para responder aos eventos do Controle de jogo");
+        mControlsButton.setOnTouchListener(new OnSwipeTouchListener(this) {
+
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                int action = motionEvent.getActionMasked();
-                /* Raise view on ACTION_DOWN and lower it on ACTION_UP. */
-                switch (action) {
-                    case MotionEvent.ACTION_DOWN:
-                        Log.d(TAG, "ACTION_DOWN on view.");
-                        view.setTranslationZ(120);
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        Log.d(TAG, "ACTION_UP on view.");
-                        view.setTranslationZ(0);
-                        break;
-                    default:
-                        return false;
+                boolean inicioJogo = gamePlay.tick();
+                if (!inicioJogo) {
+                    String NomejogAtual = txtNomeJogadorAtual.getText().toString();
+                    txtNomeJogadorAtual.setText(txtNomeJogadorEspera.getText());
+                    txtNomeJogadorEspera.setText(NomejogAtual);
+                    if (view.getTranslationZ() > 0) view.setTranslationZ(0);
+                    else view.setTranslationZ(120);
                 }
-                return true;
+
+                return true ;
             }
         });
 
-        startTimers(PLAYER_QTD);
-        activateTimer();
-    }
-
-    private void startTimers(int quantity) {
-        for (int i = 0;i < quantity;i++){
-            timers.add(new Timer());
-        }
-        timerIterator = timers.iterator();
-        timerActive = timerIterator.next();
+        Log.d(TAG, "Desabilita Controle de jogo ate o inicio");
+        mControlsButton.setEnabled(false);
 
     }
 
-    private void activateTimer() {
-        task = new TimerTask() {
-            @Override
-            public void run() {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d("Debug", "Timer Ativo");
-                    }
-                });
-            }
-        };
-        timerActive.schedule(task, 300, 300);
+    public void startGame(View v) {
+        Log.d(TAG, "Botão de inicio do jogo clicado");
+
+        Log.d(TAG, "Configura novo Game Play");
+        TextView txtConfJogadorAtual = (TextView) findViewById(R.id.txtJogador1);
+        TextView txtConfJogadorEspera = (TextView) findViewById(R.id.txtJogador2);
+        txtNomeJogadorAtual.setText(txtConfJogadorAtual.getText());
+        txtNomeJogadorEspera.setText(txtConfJogadorEspera.getText());
+        int qtd_players = 2;
+        gamePlay = new GameControl(qtd_players, new Long(txtTempoJogo.getText().toString()), txtTempoJogadorAtual, txtTempoJogadorEspera);
+
+        Log.d(TAG, "Volta o contexto para a tela de jogo");
+        toggle();
+
+        Log.d(TAG, "Habilita Controle de jogo");
+        mControlsButton.setEnabled(true);
     }
 
-    private void stopTimer() {
-        timerActive.cancel();
-        if (timerIterator.hasNext()) {
-            timerActive = timerIterator.next();
-        }else{
-            timerIterator = timers.iterator();
-            timerActive = timerIterator.next();
-        }
-    }
 
+
+    //Código relacionado à troca de contexto entre as telas
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         delayedHide(100);
     }
 
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     */
     private final View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -165,7 +159,7 @@ public class JogoXadrezActivity extends AppCompatActivity {
             actionBar.hide();
         }
         mControlsView.setVisibility(View.GONE);
-        mControlsButtom.setVisibility(View.VISIBLE);
+        mContentView.setVisibility(View.VISIBLE);
         mVisible = false;
 
         // Schedule a runnable to remove the status and navigation bar after a delay
@@ -177,12 +171,7 @@ public class JogoXadrezActivity extends AppCompatActivity {
         @SuppressLint("InlinedApi")
         @Override
         public void run() {
-            // Delayed removal of status and navigation bar
-
-            // Note that some of these constants are new as of API 16 (Jelly Bean)
-            // and API 19 (KitKat). It is safe to use them, as they are inlined
-            // at compile-time and do nothing on earlier devices.
-            mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+               mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
                     | View.SYSTEM_UI_FLAG_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -212,7 +201,7 @@ public class JogoXadrezActivity extends AppCompatActivity {
                 actionBar.show();
             }
             mControlsView.setVisibility(View.VISIBLE);
-            mControlsButtom.setVisibility(View.GONE);
+            mContentView.setVisibility(View.GONE);
         }
     };
 

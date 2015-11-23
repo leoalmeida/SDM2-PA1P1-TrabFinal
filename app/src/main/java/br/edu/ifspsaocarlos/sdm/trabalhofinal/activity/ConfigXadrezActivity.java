@@ -7,12 +7,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import br.edu.ifspsaocarlos.sdm.trabalhofinal.R;
-import br.edu.ifspsaocarlos.sdm.trabalhofinal.model.GameInfo;
+import br.edu.ifspsaocarlos.sdm.trabalhofinal.model.GameControl;
 
 public class ConfigXadrezActivity extends AppCompatActivity {
 
     private static final int INTENT_CRONO_XADREZ = 2;
-    private GameInfo gameInfo;
+    private GameControl gameControl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,7 +29,7 @@ public class ConfigXadrezActivity extends AppCompatActivity {
 
     public void newGame(MenuItem menuItem) {
         // Handle navigation view item clicks here.
-        Intent intentConfiguracaoXadrez = new Intent(this, JogoXadrezActivity.class);
+        Intent intentConfiguracaoXadrez = new Intent(this, JogoXadrezActivity2.class);
         startActivityForResult(intentConfiguracaoXadrez,INTENT_CRONO_XADREZ);
 
     }

@@ -45,5 +45,6 @@
     <string name="KEY_DICA1">dica1</string>
     <string name="KEY_DICA2">dica2</string>
     <string name="KEY_DICA3">dica3</string>
+    <string name="tempo_default">00:00</string>
 
 </resources>
